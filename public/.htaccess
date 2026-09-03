@@ -1,0 +1,12 @@
+Options -MultiViews
+RewriteEngine On
+
+# Let Apache serve built assets and leave API requests for the backend proxy.
+RewriteCond %{REQUEST_URI} ^/assets/ [OR]
+RewriteCond %{REQUEST_URI} ^/api/
+RewriteRule ^ - [L]
+
+# Support direct navigation to React SPA routes such as /management-portal.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]
