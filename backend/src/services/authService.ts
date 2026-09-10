@@ -202,7 +202,12 @@ export class AuthService {
     token: string,
     newPassword: string,
     email?: string
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{
+    success: boolean;
+    message: string;
+    token?: string;
+    admin?: any;
+  }> {
     if (!newPassword || newPassword.length < 8) {
       const error: any = new Error(
         'New password must be at least 8 characters long.'
@@ -238,9 +243,72 @@ export class AuthService {
     await admin.save();
 
     console.log(`[Auth] Password successfully reset in MongoDB for: ${admin.email}`);
+
+    const sessionToken = generateAdminToken({
+      adminId: admin._id.toString(),
+      email: admin.email,
+      role: admin.role,
+    });
+
     return {
       success: true,
-      message: 'Password successfully updated. You can now log in.',
+      message: 'Password successfully updated.',
+      token: sessionToken,
+      admin: {
+        id: admin._id,
+        email: admin.email,
+        role: admin.role,
+      },
+    };
+  }
+
+  /**
+   * Updates password directly if current password is confirmed.
+   */
+  async updatePasswordDirect(
+    adminId: string,
+    currentPassword: string,
+    newPassword: string
+  ): Promise<{ success: boolean; message: string; token?: string }> {
+    if (!newPassword || newPassword.length < 8) {
+      const error: any = new Error(
+        'New password must be at least 8 characters long.'
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      const error: any = new Error('Admin account not found.');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const isMatch = await comparePassword(currentPassword, admin.passwordHash);
+    if (!isMatch) {
+      const error: any = new Error('The current password entered is incorrect.');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    admin.passwordHash = await hashPassword(newPassword);
+    admin.resetPasswordToken = undefined;
+    admin.resetPasswordExpires = undefined;
+    await admin.save();
+
+    console.log(`[Auth] Password updated directly via settings for: ${admin.email}`);
+
+    const sessionToken = generateAdminToken({
+      adminId: admin._id.toString(),
+      email: admin.email,
+      role: admin.role,
+    });
+
+    return {
+      success: true,
+      message: 'Password updated successfully.',
+      token: sessionToken,
     };
   }
 

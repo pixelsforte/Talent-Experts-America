@@ -210,6 +210,9 @@ export class AuthController {
       }
 
       const result = await authService.resetPassword(token, newPassword, email);
+      if (result.token) {
+        setAdminCookie(res, result.token);
+      }
       res.json(result);
     } catch (error: any) {
       res.status(error.statusCode || 400).json({

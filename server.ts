@@ -11,7 +11,13 @@ dotenv.config();
 async function startServer() {
   // Create the Express backend application with all API routes mounted
   const app = createExpressApp();
-  const PORT = parseInt(process.env.PORT || '3000', 10);
+  // Determine port: in AI Studio container with reverse proxy (NGINX_PORT), use port 3000.
+  // In standalone external deployment (e.g. Cloud Run, Render, Heroku), use process.env.PORT.
+  const PORT = process.env.DEFAULT_APP_PORT
+    ? parseInt(process.env.DEFAULT_APP_PORT, 10)
+    : process.env.NGINX_PORT
+      ? 3000
+      : parseInt(process.env.PORT || '3000', 10);
 
   // Vite middleware for development / static serving in production
   if (process.env.NODE_ENV !== 'production') {

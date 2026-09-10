@@ -9,7 +9,12 @@ export class SubmissionController {
   async createSubmission(req: Request, res: Response): Promise<void> {
     try {
       if (!isDatabaseConnected()) {
-        await connectDatabase();
+        await connectDatabase(true);
+      }
+
+      if (!isDatabaseConnected()) {
+        // Wait briefly for connection handshake if still negotiating
+        await new Promise((resolve) => setTimeout(resolve, 1500));
       }
 
       if (!isDatabaseConnected()) {

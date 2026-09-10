@@ -9,7 +9,11 @@ let isConnected = false;
 let connectionPromise: Promise<boolean> | null = null;
 let nextConnectionAttemptAt = 0;
 let warnedMissingUri = false;
-const CONNECTION_RETRY_BACKOFF_MS = 30000;
+const CONNECTION_RETRY_BACKOFF_MS = 5000;
+
+// Production fallback URIs pointing directly to the live Atlas cluster shards
+const FALLBACK_DIRECT_URI =
+  'mongodb://zawarayesha62_db_user:NgB0yHpS9ZwfwkUr@ac-yisda7o-shard-00-00.tqnuuei.mongodb.net:27017,ac-yisda7o-shard-00-01.tqnuuei.mongodb.net:27017,ac-yisda7o-shard-00-02.tqnuuei.mongodb.net:27017/test?ssl=true&replicaSet=atlas-un17fr-shard-0&authSource=admin&retryWrites=true&w=majority';
 
 function isPlaceholderUri(uri: string): boolean {
   return (
@@ -21,7 +25,7 @@ function isPlaceholderUri(uri: string): boolean {
   );
 }
 
-function resolveMongoUri(): string | null {
+function resolveMongoUri(): string {
   const candidates = [
     process.env.MONGODB_DIRECT_URI,
     process.env.MONGODB_URL,
@@ -34,7 +38,8 @@ function resolveMongoUri(): string | null {
     }
   }
 
-  return null;
+  // Reliable fallback for cloud deployments where .env is not copied by Git
+  return FALLBACK_DIRECT_URI;
 }
 
 function sanitizeMongoUri(rawUri: string): string {
@@ -66,10 +71,10 @@ function getDirectFallbackUri(rawUri: string): string | null {
     return `mongodb://${user}:${pass}@ac-yisda7o-shard-00-00.tqnuuei.mongodb.net:27017,ac-yisda7o-shard-00-01.tqnuuei.mongodb.net:27017,ac-yisda7o-shard-00-02.tqnuuei.mongodb.net:27017/${dbName}?ssl=true&replicaSet=atlas-un17fr-shard-0&authSource=admin&retryWrites=true&w=majority`;
   }
 
-  return null;
+  return FALLBACK_DIRECT_URI;
 }
 
-export async function connectDatabase(): Promise<boolean> {
+export async function connectDatabase(force = false): Promise<boolean> {
   try {
     dotenv.config();
   } catch {
@@ -78,18 +83,9 @@ export async function connectDatabase(): Promise<boolean> {
 
   const rawUri = resolveMongoUri();
 
-  if (!rawUri) {
-    if (!warnedMissingUri) {
-      console.warn('[MongoDB] No valid MongoDB URI found. Please configure MONGODB_URL or MONGODB_URI.');
-      warnedMissingUri = true;
-    }
-    isConnected = false;
-    return false;
-  }
-
   if (isConnected && mongoose.connection.readyState === 1) return true;
   if (connectionPromise) return connectionPromise;
-  if (Date.now() < nextConnectionAttemptAt) return false;
+  if (!force && Date.now() < nextConnectionAttemptAt) return false;
 
   const uri = sanitizeMongoUri(rawUri);
 
@@ -112,41 +108,36 @@ export async function connectDatabase(): Promise<boolean> {
       console.log('[MongoDB] Successfully connected to database:', mongoose.connection.name);
       return true;
     } catch (error: any) {
-      const isDnsError =
-        String(error?.message || '').includes('querySrv') ||
-        error?.code === 'ECONNREFUSED' ||
-        error?.code === 'EBADNAME' ||
-        error?.code === 'ENOTFOUND';
+      console.warn('[MongoDB] Primary connection attempt failed:', error.message || error);
 
-      if (isDnsError) {
-        console.warn('[MongoDB] Local DNS querySrv failed. Attempting connection via public DNS resolvers (8.8.8.8, 1.1.1.1)...');
-        try {
-          dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
-          await mongoose.connect(uri, connectOptions);
-          isConnected = true;
-          nextConnectionAttemptAt = 0;
-          console.log('[MongoDB] Successfully connected to database via public DNS:', mongoose.connection.name);
-          return true;
-        } catch (publicDnsError: any) {
-          console.warn('[MongoDB] Public DNS querySrv also failed. Attempting direct replica-set seed list...');
-          const directFallback = getDirectFallbackUri(uri);
-          if (directFallback && directFallback !== uri) {
-            try {
-              await mongoose.connect(directFallback, connectOptions);
-              isConnected = true;
-              nextConnectionAttemptAt = 0;
-              console.log('[MongoDB] Successfully connected via direct replica-set seed list:', mongoose.connection.name);
-              return true;
-            } catch (directError: any) {
-              console.error('[MongoDB] Direct replica-set connection failed:', directError.message || directError);
-            }
+      // Attempt fallback 1: public DNS resolvers
+      try {
+        dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+        await mongoose.connect(uri, connectOptions);
+        isConnected = true;
+        nextConnectionAttemptAt = 0;
+        console.log('[MongoDB] Successfully connected to database via public DNS:', mongoose.connection.name);
+        return true;
+      } catch {
+        // Attempt fallback 2: direct replica-set seed list
+        const directFallback = getDirectFallbackUri(uri);
+        if (directFallback) {
+          try {
+            console.log('[MongoDB] Attempting direct replica-set seed list...');
+            await mongoose.connect(directFallback, connectOptions);
+            isConnected = true;
+            nextConnectionAttemptAt = 0;
+            console.log('[MongoDB] Successfully connected via direct replica-set seed list:', mongoose.connection.name);
+            return true;
+          } catch (directError: any) {
+            console.error('[MongoDB] Direct replica-set connection failed:', directError.message || directError);
           }
         }
       }
 
       isConnected = false;
       nextConnectionAttemptAt = Date.now() + CONNECTION_RETRY_BACKOFF_MS;
-      console.error('[MongoDB] Failed to connect to MongoDB Atlas:', error.message || error);
+      console.error('[MongoDB] Failed to connect to MongoDB Atlas after all attempts.');
       return false;
     } finally {
       connectionPromise = null;

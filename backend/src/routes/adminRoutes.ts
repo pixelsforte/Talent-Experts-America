@@ -28,6 +28,11 @@ router.post('/verify-new-email', (req, res) =>
 // Direct email update with current password
 router.put('/email', (req, res) => adminController.updateEmailDirect(req, res));
 
+// Direct password update with verified current password
+router.put('/password', (req, res) =>
+  adminController.updatePasswordDirect(req, res)
+);
+
 // Dashboard metrics from MongoDB
 router.get('/dashboard', (req, res) =>
   adminController.getDashboard(req, res)
