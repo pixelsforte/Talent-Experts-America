@@ -38,7 +38,7 @@ export async function sendPasswordResetEmail(
 ): Promise<{ success: boolean; message: string; debugToken?: string }> {
   const baseUrl = appUrl || process.env.APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
   const resetUrl = `${baseUrl}/management-portal/reset-password?token=${resetToken}&email=${encodeURIComponent(toEmail)}`;
-  const from = process.env.EMAIL_FROM || '"Talent Experts of America" <noreply@talentexpertsamerica.com>';
+  const from = process.env.EMAIL_FROM || '"The Talent Experts of America" <info@talentexpertsamerica.com>';
 
   // Record for debugging / testing scenarios
   memoryEmailOutbox.push({
@@ -51,7 +51,7 @@ export async function sendPasswordResetEmail(
   const mailOptions = {
     from,
     to: toEmail,
-    subject: 'Security: Password Recovery for Management Portal - The American Dream Staffing',
+    subject: 'Security: Password Recovery for Management Portal - The Talent Experts of America',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; background-color: #ffffff;">
         <div style="border-bottom: 2px solid #b91c1c; padding-bottom: 16px; margin-bottom: 24px;">
@@ -111,7 +111,7 @@ export async function sendEmailChangeVerification(
 ): Promise<{ success: boolean; message: string; debugToken?: string }> {
   const baseUrl = appUrl || process.env.APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
   const verifyUrl = `${baseUrl}/management-portal/settings?action=verify-email&token=${verificationToken}&email=${encodeURIComponent(newEmail)}`;
-  const from = process.env.EMAIL_FROM || '"Talent Experts of America" <noreply@talentexpertsamerica.com>';
+  const from = process.env.EMAIL_FROM || '"The Talent Experts of America" <info@talentexpertsamerica.com>';
 
   // Record for debugging / testing
   memoryEmailOutbox.push({
@@ -124,7 +124,7 @@ export async function sendEmailChangeVerification(
   const mailOptions = {
     from,
     to: newEmail,
-    subject: 'Security: Verify New Email for Management Portal - The American Dream Staffing',
+    subject: 'Security: Verify New Email for Management Portal - The Talent Experts of America',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; background-color: #ffffff;">
         <div style="border-bottom: 2px solid #b91c1c; padding-bottom: 16px; margin-bottom: 24px;">

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { FormSubmission } from '../models/FormSubmission.js';
-import { isDatabaseConnected } from '../config/database.js';
+import { isDatabaseConnected, connectDatabase } from '../config/database.js';
 
 export class SubmissionController {
   /**
@@ -8,6 +8,18 @@ export class SubmissionController {
    */
   async createSubmission(req: Request, res: Response): Promise<void> {
     try {
+      if (!isDatabaseConnected()) {
+        await connectDatabase();
+      }
+
+      if (!isDatabaseConnected()) {
+        res.status(503).json({
+          error: 'Database Connecting',
+          message: 'The database is currently connecting. Please try again in a few moments.',
+        });
+        return;
+      }
+
       const { fullName, email, phone, company, interest, message } = req.body;
 
       const submission = new FormSubmission({

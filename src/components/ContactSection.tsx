@@ -98,13 +98,13 @@ export const ContactSection: React.FC = () => {
               <div className="space-y-6 mb-12">
                 <div>
                   <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block mb-1">
-                    WEBSITE
+                    EMAIL
                   </span>
                   <a
-                    href="mailto:info@theamerciandreamstaffing.com"
+                    href="mailto:info@talentexpertsamerica.com"
                     className="text-base font-bold text-gray-900 hover:text-[#b91c1c] transition-colors"
                   >
-                    info@theamerciandreamstaffing.com
+                    info@talentexpertsamerica.com
                   </a>
                 </div>
               </div>

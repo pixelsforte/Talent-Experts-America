@@ -32,12 +32,15 @@ export function createExpressApp(): express.Application {
   app.use(express.json({ limit: '5mb' }));
   app.use(express.urlencoded({ extended: true }));
 
-  // Try to reconnect in the background for API requests. Do not block the request
-  // pipeline on a slow/unreachable Atlas DNS lookup.
-  app.use((req, _res, next) => {
-    const isPublicStatusRoute = req.path === '/api/health' || req.path === '/api/auth/status';
+  // Ensure database connection is established for API requests
+  app.use(async (req, _res, next) => {
+    const isPublicStatusRoute = req.path === '/api/health';
     if (req.path.startsWith('/api') && !isPublicStatusRoute && !isDatabaseConnected()) {
-      void connectDatabase();
+      try {
+        await connectDatabase();
+      } catch (err) {
+        console.warn('[MongoDB Middleware] Connection attempt error:', err);
+      }
     }
     next();
   });

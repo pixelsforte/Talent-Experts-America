@@ -270,13 +270,24 @@ export const ACCOUNTABILITY_ITEMS: AccountabilityItem[] = [
 ];
 
 export const TEAM_MEMBERS: TeamMember[] = [
-  
- 
-  {  
+  /*
+  {
+    initials: 'AR',
+    name: 'Ahsan Rizvi',
+    role: 'Director',
+    title: 'THE Talent Experts of America',
+  },
+  {
+    initials: 'JR',
+    name: 'Joseph Ross',
+    role: 'Director',
+    title: 'THE Talent Experts of America',
+  },
+  */
+  {
     initials: 'EC',
     name: 'Enrique Carceres ',
     role: ' President & CEO',
-
     title: 'THE Talent Experts of America',
     image: '/team-01.jpeg',
   },

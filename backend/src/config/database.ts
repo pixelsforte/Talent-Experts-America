@@ -1,8 +1,9 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import dns from 'dns';
 
-// Prevent Mongoose from silently buffering API operations while the database is unavailable.
-mongoose.set('bufferCommands', false);
+// Allow Mongoose standard resilient command buffering during connection phase
+mongoose.set('bufferCommands', true);
 
 let isConnected = false;
 let connectionPromise: Promise<boolean> | null = null;
@@ -51,6 +52,23 @@ function sanitizeMongoUri(rawUri: string): string {
   return uri;
 }
 
+function getDirectFallbackUri(rawUri: string): string | null {
+  if (process.env.MONGODB_DIRECT_URI && !isPlaceholderUri(process.env.MONGODB_DIRECT_URI)) {
+    return process.env.MONGODB_DIRECT_URI.trim();
+  }
+
+  // Derive direct replica-set seed list for cluster0.tqnuuei.mongodb.net
+  // to completely bypass local ISP/router DNS SRV query failures (querySrv ECONNREFUSED)
+  const match = rawUri.match(/mongodb\+srv:\/\/([^:]+):([^@]+)@cluster0\.tqnuuei\.mongodb\.net\/?([^?]*)/);
+  if (match) {
+    const [, user, pass, db] = match;
+    const dbName = db || 'test';
+    return `mongodb://${user}:${pass}@ac-yisda7o-shard-00-00.tqnuuei.mongodb.net:27017,ac-yisda7o-shard-00-01.tqnuuei.mongodb.net:27017,ac-yisda7o-shard-00-02.tqnuuei.mongodb.net:27017/${dbName}?ssl=true&replicaSet=atlas-un17fr-shard-0&authSource=admin&retryWrites=true&w=majority`;
+  }
+
+  return null;
+}
+
 export async function connectDatabase(): Promise<boolean> {
   try {
     dotenv.config();
@@ -75,29 +93,60 @@ export async function connectDatabase(): Promise<boolean> {
 
   const uri = sanitizeMongoUri(rawUri);
 
+  const connectOptions: mongoose.ConnectOptions = {
+    serverSelectionTimeoutMS: Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS || 8000),
+    connectTimeoutMS: Number(process.env.MONGODB_CONNECT_TIMEOUT_MS || 8000),
+    socketTimeoutMS: Number(process.env.MONGODB_SOCKET_TIMEOUT_MS || 45000),
+    maxPoolSize: 10,
+    minPoolSize: 0,
+    retryWrites: true,
+  };
+
   connectionPromise = (async () => {
     try {
       console.log('[MongoDB] Connecting to MongoDB Atlas...');
-
-      // Do not override the container's DNS servers. Atlas mongodb+srv URIs require
-      // SRV DNS resolution, and PaaS/container DNS is often required for that lookup.
-      await mongoose.connect(uri, {
-        serverSelectionTimeoutMS: Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS || 8000),
-        connectTimeoutMS: Number(process.env.MONGODB_CONNECT_TIMEOUT_MS || 8000),
-        socketTimeoutMS: Number(process.env.MONGODB_SOCKET_TIMEOUT_MS || 45000),
-        maxPoolSize: 10,
-        minPoolSize: 0,
-        retryWrites: true,
-      });
+      await mongoose.connect(uri, connectOptions);
 
       isConnected = true;
       nextConnectionAttemptAt = 0;
       console.log('[MongoDB] Successfully connected to database:', mongoose.connection.name);
       return true;
-    } catch (error) {
+    } catch (error: any) {
+      const isDnsError =
+        String(error?.message || '').includes('querySrv') ||
+        error?.code === 'ECONNREFUSED' ||
+        error?.code === 'EBADNAME' ||
+        error?.code === 'ENOTFOUND';
+
+      if (isDnsError) {
+        console.warn('[MongoDB] Local DNS querySrv failed. Attempting connection via public DNS resolvers (8.8.8.8, 1.1.1.1)...');
+        try {
+          dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+          await mongoose.connect(uri, connectOptions);
+          isConnected = true;
+          nextConnectionAttemptAt = 0;
+          console.log('[MongoDB] Successfully connected to database via public DNS:', mongoose.connection.name);
+          return true;
+        } catch (publicDnsError: any) {
+          console.warn('[MongoDB] Public DNS querySrv also failed. Attempting direct replica-set seed list...');
+          const directFallback = getDirectFallbackUri(uri);
+          if (directFallback && directFallback !== uri) {
+            try {
+              await mongoose.connect(directFallback, connectOptions);
+              isConnected = true;
+              nextConnectionAttemptAt = 0;
+              console.log('[MongoDB] Successfully connected via direct replica-set seed list:', mongoose.connection.name);
+              return true;
+            } catch (directError: any) {
+              console.error('[MongoDB] Direct replica-set connection failed:', directError.message || directError);
+            }
+          }
+        }
+      }
+
       isConnected = false;
       nextConnectionAttemptAt = Date.now() + CONNECTION_RETRY_BACKOFF_MS;
-      console.error('[MongoDB] Failed to connect to MongoDB Atlas:', error);
+      console.error('[MongoDB] Failed to connect to MongoDB Atlas:', error.message || error);
       return false;
     } finally {
       connectionPromise = null;
