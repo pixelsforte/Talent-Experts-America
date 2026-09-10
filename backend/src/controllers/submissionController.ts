@@ -8,14 +8,6 @@ export class SubmissionController {
    */
   async createSubmission(req: Request, res: Response): Promise<void> {
     try {
-      if (!isDatabaseConnected()) {
-        res.status(503).json({
-          error: 'Service Unavailable',
-          message: 'Database storage is temporarily offline. Please try again or contact us directly.',
-        });
-        return;
-      }
-
       const { fullName, email, phone, company, interest, message } = req.body;
 
       const submission = new FormSubmission({
@@ -29,7 +21,7 @@ export class SubmissionController {
       });
 
       await submission.save();
-      console.log(`[FormSubmission] New inquiry from: ${submission.fullName} (${submission.email}) [${submission.interest}]`);
+      console.log(`[FormSubmission] New inquiry saved to MongoDB from: ${submission.fullName} (${submission.email}) [${submission.interest}]`);
 
       res.status(201).json({
         success: true,
@@ -51,14 +43,6 @@ export class SubmissionController {
    */
   async getSubmissions(req: Request, res: Response): Promise<void> {
     try {
-      if (!isDatabaseConnected()) {
-        res.status(503).json({
-          error: 'Service Unavailable',
-          message: 'Database is not connected.',
-        });
-        return;
-      }
-
       const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
       const limit = Math.min(
         100,
@@ -123,6 +107,7 @@ export class SubmissionController {
   async getSubmissionById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
+
       const submission = await FormSubmission.findById(id);
 
       if (!submission) {
@@ -192,6 +177,7 @@ export class SubmissionController {
   async deleteSubmission(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
+
       const submission = await FormSubmission.findByIdAndDelete(id);
 
       if (!submission) {
@@ -216,3 +202,4 @@ export class SubmissionController {
 }
 
 export const submissionController = new SubmissionController();
+

@@ -3,7 +3,7 @@ import { AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { authService } from '../services/authService.js';
 import { FormSubmission } from '../models/FormSubmission.js';
 import { setAdminCookie } from '../utils/tokens.js';
-import { getDatabaseState } from '../config/database.js';
+import { getDatabaseState, isDatabaseConnected } from '../config/database.js';
 
 export class AdminController {
   /**

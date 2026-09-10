@@ -13,14 +13,6 @@ export async function requireSuperAdmin(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  if (!isDatabaseConnected()) {
-    res.status(503).json({
-      error: 'Database is not connected',
-      message: 'MongoDB connection is not active. Please check MONGODB_URI configuration.',
-    });
-    return;
-  }
-
   // 1. Check HttpOnly Cookie first, then Authorization header
   const cookieToken = req.cookies?.[ADMIN_COOKIE_NAME];
   const authHeader = req.headers.authorization;
@@ -70,3 +62,4 @@ export async function requireSuperAdmin(
     });
   }
 }
+

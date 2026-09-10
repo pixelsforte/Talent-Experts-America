@@ -7,7 +7,34 @@ mongoose.set('bufferCommands', false);
 let isConnected = false;
 let connectionPromise: Promise<boolean> | null = null;
 let nextConnectionAttemptAt = 0;
+let warnedMissingUri = false;
 const CONNECTION_RETRY_BACKOFF_MS = 30000;
+
+function isPlaceholderUri(uri: string): boolean {
+  return (
+    uri.includes('<username>') ||
+    uri.includes('<cluster>') ||
+    uri.includes('<database>') ||
+    uri.includes('username:password@') ||
+    uri.includes('your_mongodb')
+  );
+}
+
+function resolveMongoUri(): string | null {
+  const candidates = [
+    process.env.MONGODB_DIRECT_URI,
+    process.env.MONGODB_URL,
+    process.env.MONGODB_URI,
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate && candidate.trim() && !isPlaceholderUri(candidate)) {
+      return candidate.trim();
+    }
+  }
+
+  return null;
+}
 
 function sanitizeMongoUri(rawUri: string): string {
   let uri = rawUri.trim();
@@ -31,12 +58,13 @@ export async function connectDatabase(): Promise<boolean> {
     // Environment variables may already be supplied by the hosting platform.
   }
 
-  // Prefer MONGODB_URI; keep MONGODB_URL for backwards compatibility.
-  // MONGODB_DIRECT_URI can be supplied by the host if SRV DNS is unavailable.
-  const rawUri = process.env.MONGODB_DIRECT_URI || process.env.MONGODB_URI || process.env.MONGODB_URL;
+  const rawUri = resolveMongoUri();
 
-  if (!rawUri || !rawUri.trim()) {
-    console.warn('[MongoDB] MONGODB_DIRECT_URI / MONGODB_URI / MONGODB_URL is not configured. Database features are unavailable.');
+  if (!rawUri) {
+    if (!warnedMissingUri) {
+      console.warn('[MongoDB] No valid MongoDB URI found. Please configure MONGODB_URL or MONGODB_URI.');
+      warnedMissingUri = true;
+    }
     isConnected = false;
     return false;
   }
