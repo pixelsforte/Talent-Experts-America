@@ -410,7 +410,7 @@ export const PortalSettingsTab: React.FC<PortalSettingsTabProps> = ({
                 required
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="newadmin@theamericandreamstaffing.com"
+                placeholder="newadmin@talentexpertsamerica.com"
                 className="w-full px-4 py-2.5 border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:border-gray-900 bg-white"
               />
             </div>
@@ -515,7 +515,7 @@ export const PortalSettingsTab: React.FC<PortalSettingsTabProps> = ({
                     required
                     value={directEmail}
                     onChange={(e) => setDirectEmail(e.target.value)}
-                    placeholder="newadmin@theamericandreamstaffing.com"
+                    placeholder="newadmin@talentexpertsamerica.com"
                     className="w-full px-4 py-2.5 border border-gray-300 rounded text-sm bg-white"
                   />
                 </div>

@@ -130,7 +130,7 @@ export const PortalForgotPassword: React.FC<PortalForgotPasswordProps> = ({
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@theamericandreamstaffing.com"
+                placeholder="admin@talentexpertsamerica.com"
                 className="w-full px-4 py-3 bg-[#0c1630] border border-[#22355b] text-white text-sm focus:outline-none focus:border-white transition-colors"
               />
             </div>

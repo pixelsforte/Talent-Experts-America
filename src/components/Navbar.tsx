@@ -40,7 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center gap-3 group cursor-pointer"
           >
             <img
-              src="/logo-main-1.png"
+              src="/logo-main-1.jpeg"
               alt="The Talent Experts of America"
               className="h-16 sm:h-20 max-h-20 w-auto max-w-[280px] sm:max-w-[340px] object-contain shrink-0 transition-transform duration-200 group-hover:scale-[1.02]"
               referrerPolicy="no-referrer"

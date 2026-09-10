@@ -38,7 +38,7 @@ export async function sendPasswordResetEmail(
 ): Promise<{ success: boolean; message: string; debugToken?: string }> {
   const baseUrl = appUrl || process.env.APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
   const resetUrl = `${baseUrl}/management-portal/reset-password?token=${resetToken}&email=${encodeURIComponent(toEmail)}`;
-  const from = process.env.EMAIL_FROM || '"The American Dream Staffing" <noreply@theamericandreamstaffing.com>';
+  const from = process.env.EMAIL_FROM || '"Talent Experts of America" <noreply@talentexpertsamerica.com>';
 
   // Record for debugging / testing scenarios
   memoryEmailOutbox.push({
@@ -111,7 +111,7 @@ export async function sendEmailChangeVerification(
 ): Promise<{ success: boolean; message: string; debugToken?: string }> {
   const baseUrl = appUrl || process.env.APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
   const verifyUrl = `${baseUrl}/management-portal/settings?action=verify-email&token=${verificationToken}&email=${encodeURIComponent(newEmail)}`;
-  const from = process.env.EMAIL_FROM || '"The American Dream Staffing" <noreply@theamericandreamstaffing.com>';
+  const from = process.env.EMAIL_FROM || '"Talent Experts of America" <noreply@talentexpertsamerica.com>';
 
   // Record for debugging / testing
   memoryEmailOutbox.push({

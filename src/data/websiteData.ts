@@ -271,39 +271,35 @@ export const ACCOUNTABILITY_ITEMS: AccountabilityItem[] = [
 
 export const TEAM_MEMBERS: TeamMember[] = [
   
-  {
-    initials: 'AR',
-    name: 'Ahsan Rizvi',
-    role: 'Director',
+ 
+  {  
+    initials: 'EC',
+    name: 'Enrique Carceres ',
+    role: ' President & CEO',
+
     title: 'THE Talent Experts of America',
-  },
-  {
-    initials: 'JR',
-    name: 'Joseph Ross',
-    role: 'Director',
-    title: 'THE Talent Experts of America',
-  },
-  
-  {
-    initials: 'AR',
-    name: 'Ahmer Rizvi',
-    role: 'Director',
-    title: 'THE Talent Experts of America',
-    // image: '/director.jpeg',
+    image: '/team-01.jpeg',
   },
   {
     initials: 'AW',
     name: 'Arbab Wasi',
-    role: 'Director',
+    role: 'Chief Operating Officer	',
     title: 'THE Talent Experts of America',
-    // image: '/Ceo.jpeg',
+    image: '/team-02.jpeg',
+  },
+  {
+    initials: 'AR',
+    name: 'Ahmer Rizvi',
+    role: 'Director of Client ',
+    title: 'THE Talent Experts of America',
+    image: '/team-03.jpeg',
   },
 ];
 
 export const CONTACT_INFO = {
   phone: '',
-  email: 'info@theamerciandreamstaffing.com',
-  website: 'theamericandreamstaffing.com',
+  email: 'info@talentexpertsamerica.com',
+  website: 'talentexpertsamerica.com',
   footnote: 'Serving organizations and professionals across the United States.',
 };
 
