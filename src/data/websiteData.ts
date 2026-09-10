@@ -21,20 +21,20 @@ export const NAV_ITEMS: NavItem[] = [
 
 export const HIGHLIGHTS_BAR = [
   {
-    title: 'U.S.-BASED TALENT',
+    title: 'U.S BASED TALENT',
     description: 'Professionals residing in the United States.',
   },
   {
     title: 'END-TO-END STAFFING',
-    description: 'From recruitment through onboarding.',
+    description: 'From recruitment through onboarding',
   },
   {
     title: 'VETERAN WORKFORCE',
-    description: 'Supporting veterans transitioning into civilian careers.',
+    description: 'Supporting veterans transitioning into civilian careers',
   },
   {
     title: 'INDUSTRY EXPERTISE',
-    description: 'Staffing solutions across diverse industries.',
+    description: 'Staffing solutions across diverse industries',
   },
 ];
 
