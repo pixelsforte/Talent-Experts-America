@@ -10,6 +10,10 @@ import { getDatabaseState, isDatabaseConnected, connectDatabase } from './config
 
 export function createExpressApp(): express.Application {
   const app = express();
+  const corsOrigin =
+    process.env.NODE_ENV === 'production' && process.env.FRONTEND_URL
+      ? process.env.FRONTEND_URL
+      : true;
 
   // Security headers (keep CSP relaxed to work with Vite SPA)
   app.use(
@@ -22,7 +26,7 @@ export function createExpressApp(): express.Application {
   // CORS
   app.use(
     cors({
-      origin: true,
+      origin: corsOrigin,
       credentials: true,
     })
   );

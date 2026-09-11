@@ -1,8 +1,13 @@
 import jwt from 'jsonwebtoken';
 import { Response } from 'express';
+import dotenv from 'dotenv';
 
-const JWT_SECRET =
-  process.env.JWT_SECRET || 'ad-staffing-super-admin-secure-key-2026-xyz';
+dotenv.config();
+
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('[Auth] JWT_SECRET is required in production.');
+}
+
 const TOKEN_EXPIRY = '7d';
 
 export const ADMIN_COOKIE_NAME = 'ad_admin_session';
@@ -13,15 +18,22 @@ export interface AdminTokenPayload {
   role: 'SUPER_ADMIN';
 }
 
+function getJwtSecret(): string {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('[Auth] JWT_SECRET is required.');
+  }
+  return process.env.JWT_SECRET;
+}
+
 export function generateAdminToken(payload: AdminTokenPayload): string {
-  return jwt.sign(payload, JWT_SECRET, {
+  return jwt.sign(payload, getJwtSecret(), {
     expiresIn: TOKEN_EXPIRY,
   });
 }
 
 export function verifyAdminToken(token: string): AdminTokenPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as AdminTokenPayload;
+    const decoded = jwt.verify(token, getJwtSecret()) as AdminTokenPayload;
     if (decoded && decoded.role === 'SUPER_ADMIN') {
       return decoded;
     }
