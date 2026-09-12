@@ -301,7 +301,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
   {
     initials: 'AR',
     name: 'Ahmer Rizvi',
-    role: 'Director of Client ',
+    role: 'Director of client acquisition',
     title: 'THE Talent Experts of America',
     image: '/team-03.jpeg',
   },
