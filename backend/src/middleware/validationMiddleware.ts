@@ -55,12 +55,34 @@ export function validateFormSubmission(
     return;
   }
 
-  if (req.body.message && typeof req.body.message === 'string' && req.body.message.length > 3000) {
-    res.status(400).json({
-      error: 'Validation Error',
-      message: 'Message cannot exceed 3000 characters.',
-    });
-    return;
+  if (req.body.phone !== undefined && req.body.phone !== null) {
+    if (typeof req.body.phone !== 'string' || req.body.phone.length > 50) {
+      res.status(400).json({
+        error: 'Validation Error',
+        message: 'Phone number must be a valid text string under 50 characters.',
+      });
+      return;
+    }
+  }
+
+  if (req.body.company !== undefined && req.body.company !== null) {
+    if (typeof req.body.company !== 'string' || req.body.company.length > 120) {
+      res.status(400).json({
+        error: 'Validation Error',
+        message: 'Company name must be a valid text string under 120 characters.',
+      });
+      return;
+    }
+  }
+
+  if (req.body.message !== undefined && req.body.message !== null) {
+    if (typeof req.body.message !== 'string' || req.body.message.length > 3000) {
+      res.status(400).json({
+        error: 'Validation Error',
+        message: 'Message cannot exceed 3000 characters.',
+      });
+      return;
+    }
   }
 
   next();

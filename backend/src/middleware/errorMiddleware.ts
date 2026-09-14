@@ -14,26 +14,28 @@ export function errorHandler(
     err.name === 'MongoServerSelectionError' ||
     (err.message && (err.message.includes('buffering timed out') || err.message.includes('topology was closed')))
   ) {
-    console.warn('[AI Studio] Database offline — returning mock/fallback response');
-    if (req.method === 'GET') {
-      res.json(req.path.endsWith('s') || req.path.endsWith('s/') ? [] : {});
-      return;
-    }
+    console.warn('[MongoDB Error] Database connection or query failure:', err.message || err.name);
     res.status(503).json({
-      error: 'Service temporarily unavailable',
-      message: 'Database is currently offline or unconfigured.',
+      error: 'Service Temporarily Unavailable',
+      message: 'Database service is currently unreachable or disconnected. Please try again in a few moments.',
     });
     return;
   }
 
-  const statusCode = err.statusCode || 500;
+  const isProd = process.env.NODE_ENV === 'production';
+  const statusCode =
+    typeof err.statusCode === 'number' && err.statusCode >= 400 && err.statusCode < 600
+      ? err.statusCode
+      : 500;
   const message =
-    err.message || 'An unexpected error occurred. Please try again later.';
+    statusCode < 500 || !isProd
+      ? err.message || 'An unexpected error occurred. Please try again later.'
+      : 'An internal server error occurred. Please try again later.';
 
   res.status(statusCode).json({
     error: err.name || 'Error',
     message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    ...(!isProd && { stack: err.stack }),
   });
 }
 

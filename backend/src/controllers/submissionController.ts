@@ -2,6 +2,10 @@ import { Request, Response } from 'express';
 import { FormSubmission } from '../models/FormSubmission.js';
 import { isDatabaseConnected, connectDatabase } from '../config/database.js';
 
+function escapeRegex(text: string): string {
+  return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+}
+
 export class SubmissionController {
   /**
    * Public endpoint to save form inquiries into MongoDB.
@@ -74,11 +78,12 @@ export class SubmissionController {
       const filter: any = {};
 
       if (search) {
+        const safeSearch = escapeRegex(search);
         filter.$or = [
-          { fullName: { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } },
-          { company: { $regex: search, $options: 'i' } },
-          { phone: { $regex: search, $options: 'i' } },
+          { fullName: { $regex: safeSearch, $options: 'i' } },
+          { email: { $regex: safeSearch, $options: 'i' } },
+          { company: { $regex: safeSearch, $options: 'i' } },
+          { phone: { $regex: safeSearch, $options: 'i' } },
         ];
       }
 

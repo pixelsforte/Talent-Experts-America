@@ -162,10 +162,11 @@ export class AuthService {
     await admin.save();
 
     const emailResult = await sendPasswordResetEmail(cleanEmail, token, appUrl);
+    const isProduction = process.env.NODE_ENV === 'production';
     return {
       success: true,
       message: 'Password reset instructions have been sent to your email.',
-      debugToken: emailResult.debugToken,
+      ...(!isProduction && emailResult.debugToken ? { debugToken: emailResult.debugToken } : {}),
     };
   }
 
@@ -368,10 +369,11 @@ export class AuthService {
       token,
       appUrl
     );
+    const isProduction = process.env.NODE_ENV === 'production';
     return {
       success: true,
       message: `Verification code sent to ${cleanNewEmail}. Please confirm to finalize.`,
-      debugToken: emailResult.debugToken,
+      ...(!isProduction && emailResult.debugToken ? { debugToken: emailResult.debugToken } : {}),
     };
   }
 

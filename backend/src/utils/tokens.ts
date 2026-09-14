@@ -8,6 +8,10 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('[Auth] JWT_SECRET is required in production.');
 }
 
+if (process.env.NODE_ENV === 'production' && process.env.JWT_SECRET === 'your-production-secret') {
+  console.warn('[Security Warning] JWT_SECRET is set to the default placeholder value. Please set a unique, random secret in production.');
+}
+
 const TOKEN_EXPIRY = '7d';
 
 export const ADMIN_COOKIE_NAME = 'ad_admin_session';
