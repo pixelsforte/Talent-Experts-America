@@ -11,8 +11,8 @@ import { getDatabaseState, isDatabaseConnected, connectDatabase } from './config
 export function createExpressApp(): express.Application {
   const app = express();
   const corsOrigin =
-    process.env.NODE_ENV === 'production' && process.env.FRONTEND_URL
-      ? process.env.FRONTEND_URL
+    process.env.NODE_ENV === 'production'
+      ? process.env.FRONTEND_URL || false
       : true;
 
   // Security headers (keep CSP relaxed to work with Vite SPA)
