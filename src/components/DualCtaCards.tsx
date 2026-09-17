@@ -43,7 +43,7 @@ export const DualCtaCards: React.FC<DualCtaCardsProps> = ({
               </h3>
               <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-8 max-w-xl">
                 Tell us what your organization needs. We&apos;ll help connect you
-                with qualified U.S based talent.
+                with qualified U.S.based talent.
               </p>
             </div>
             <div>

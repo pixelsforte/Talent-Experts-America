@@ -21,8 +21,7 @@ export class AuthService {
     signupAllowed: boolean;
     databaseConnected: boolean;
   }> {
-    const dbConnected = isDatabaseConnected();
-    if (!dbConnected) {
+    if (!isDatabaseConnected()) {
       return {
         adminExists: false,
         signupAllowed: false,
@@ -31,10 +30,10 @@ export class AuthService {
     }
 
     try {
-      const count = await Admin.countDocuments().maxTimeMS(5000);
+      const count = await Admin.countDocuments().maxTimeMS(3000);
       return {
-        adminExists: count > 0,
-        signupAllowed: count === 0,
+      adminExists: count > 0,
+      signupAllowed: count === 0,
         databaseConnected: true,
       };
     } catch (error) {
@@ -55,6 +54,18 @@ export class AuthService {
     email: string,
     password: string
   ): Promise<{ admin: IAdmin; token: string }> {
+    if (!isDatabaseConnected()) {
+      throw new Error('Database is not connected. Please verify MONGODB_URI.');
+    }
+
+    // Strict count check
+    const existingCount = await Admin.countDocuments();
+    if (existingCount > 0) {
+      const error: any = new Error('Admin already exists. Signup is disabled.');
+      error.statusCode = 403;
+      throw error;
+    }
+
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes('@')) {
       const error: any = new Error('A valid email address is required.');
@@ -70,15 +81,9 @@ export class AuthService {
       throw error;
     }
 
-    // Strict count check in MongoDB
-    const existingCount = await Admin.countDocuments();
-    if (existingCount > 0) {
-      const error: any = new Error('Admin already exists. Signup is disabled.');
-      error.statusCode = 403;
-      throw error;
-    }
-
     const passwordHash = await hashPassword(password);
+
+    // Create the one Super Admin document
     const admin = new Admin({
       email: cleanEmail,
       passwordHash,
@@ -86,7 +91,7 @@ export class AuthService {
     });
 
     await admin.save();
-    console.log(`[Auth] First Super Admin successfully created in MongoDB: ${cleanEmail}`);
+    console.log(`[Auth] First Super Admin successfully created: ${cleanEmail}`);
 
     const token = generateAdminToken({
       adminId: admin._id.toString(),
@@ -104,8 +109,11 @@ export class AuthService {
     email: string,
     password: string
   ): Promise<{ admin: IAdmin; token: string }> {
-    const cleanEmail = email.trim().toLowerCase();
+    if (!isDatabaseConnected()) {
+      throw new Error('Database is not connected. Please verify MONGODB_URI.');
+    }
 
+    const cleanEmail = email.trim().toLowerCase();
     const admin = await Admin.findOne({ email: cleanEmail });
 
     if (!admin) {
@@ -143,11 +151,15 @@ export class AuthService {
     email: string,
     appUrl?: string
   ): Promise<{ success: boolean; message: string; debugToken?: string }> {
-    const cleanEmail = email.trim().toLowerCase();
+    if (!isDatabaseConnected()) {
+      throw new Error('Database is not connected.');
+    }
 
+    const cleanEmail = email.trim().toLowerCase();
     const admin = await Admin.findOne({ email: cleanEmail });
 
     if (!admin) {
+      // Do not leak existence info, or return friendly notification
       return {
         success: false,
         message: 'The submitted email does not match the active administrator account.',
@@ -155,18 +167,15 @@ export class AuthService {
     }
 
     const { token, hashedToken } = generateSecureToken();
-    const expires = new Date(Date.now() + 3600000); // 1 hour
-
     admin.resetPasswordToken = hashedToken;
-    admin.resetPasswordExpires = expires;
+    admin.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
     await admin.save();
 
     const emailResult = await sendPasswordResetEmail(cleanEmail, token, appUrl);
-    const isProduction = process.env.NODE_ENV === 'production';
     return {
       success: true,
       message: 'Password reset instructions have been sent to your email.',
-      ...(!isProduction && emailResult.debugToken ? { debugToken: emailResult.debugToken } : {}),
+      debugToken: emailResult.debugToken,
     };
   }
 
@@ -177,8 +186,11 @@ export class AuthService {
     token: string,
     email?: string
   ): Promise<{ valid: boolean; email?: string }> {
-    const hashedToken = hashToken(token);
+    if (!isDatabaseConnected()) {
+      throw new Error('Database is not connected.');
+    }
 
+    const hashedToken = hashToken(token);
     const query: any = {
       resetPasswordToken: hashedToken,
       resetPasswordExpires: { $gt: new Date() },
@@ -203,12 +215,11 @@ export class AuthService {
     token: string,
     newPassword: string,
     email?: string
-  ): Promise<{
-    success: boolean;
-    message: string;
-    token?: string;
-    admin?: any;
-  }> {
+  ): Promise<{ success: boolean; message: string }> {
+    if (!isDatabaseConnected()) {
+      throw new Error('Database is not connected.');
+    }
+
     if (!newPassword || newPassword.length < 8) {
       const error: any = new Error(
         'New password must be at least 8 characters long.'
@@ -218,8 +229,6 @@ export class AuthService {
     }
 
     const hashedToken = hashToken(token);
-    const newPasswordHash = await hashPassword(newPassword);
-
     const query: any = {
       resetPasswordToken: hashedToken,
       resetPasswordExpires: { $gt: new Date() },
@@ -238,78 +247,15 @@ export class AuthService {
       throw error;
     }
 
-    admin.passwordHash = newPasswordHash;
-    admin.resetPasswordToken = undefined;
-    admin.resetPasswordExpires = undefined;
-    await admin.save();
-
-    console.log(`[Auth] Password successfully reset in MongoDB for: ${admin.email}`);
-
-    const sessionToken = generateAdminToken({
-      adminId: admin._id.toString(),
-      email: admin.email,
-      role: admin.role,
-    });
-
-    return {
-      success: true,
-      message: 'Password successfully updated.',
-      token: sessionToken,
-      admin: {
-        id: admin._id,
-        email: admin.email,
-        role: admin.role,
-      },
-    };
-  }
-
-  /**
-   * Updates password directly if current password is confirmed.
-   */
-  async updatePasswordDirect(
-    adminId: string,
-    currentPassword: string,
-    newPassword: string
-  ): Promise<{ success: boolean; message: string; token?: string }> {
-    if (!newPassword || newPassword.length < 8) {
-      const error: any = new Error(
-        'New password must be at least 8 characters long.'
-      );
-      error.statusCode = 400;
-      throw error;
-    }
-
-    const admin = await Admin.findById(adminId);
-    if (!admin) {
-      const error: any = new Error('Admin account not found.');
-      error.statusCode = 404;
-      throw error;
-    }
-
-    const isMatch = await comparePassword(currentPassword, admin.passwordHash);
-    if (!isMatch) {
-      const error: any = new Error('The current password entered is incorrect.');
-      error.statusCode = 400;
-      throw error;
-    }
-
     admin.passwordHash = await hashPassword(newPassword);
     admin.resetPasswordToken = undefined;
     admin.resetPasswordExpires = undefined;
     await admin.save();
 
-    console.log(`[Auth] Password updated directly via settings for: ${admin.email}`);
-
-    const sessionToken = generateAdminToken({
-      adminId: admin._id.toString(),
-      email: admin.email,
-      role: admin.role,
-    });
-
+    console.log(`[Auth] Password successfully reset for: ${admin.email}`);
     return {
       success: true,
-      message: 'Password updated successfully.',
-      token: sessionToken,
+      message: 'Password successfully updated. You can now log in.',
     };
   }
 
@@ -341,7 +287,6 @@ export class AuthService {
     }
 
     const admin = await Admin.findById(adminId);
-
     if (!admin) {
       const error: any = new Error('Admin not found.');
       error.statusCode = 404;
@@ -357,11 +302,9 @@ export class AuthService {
     }
 
     const { token, hashedToken } = generateSecureToken();
-    const expires = new Date(Date.now() + 3600000); // 1 hour
-
     admin.pendingNewEmail = cleanNewEmail;
     admin.emailChangeToken = hashedToken;
-    admin.emailChangeExpires = expires;
+    admin.emailChangeExpires = new Date(Date.now() + 3600000); // 1 hour
     await admin.save();
 
     const emailResult = await sendEmailChangeVerification(
@@ -369,11 +312,10 @@ export class AuthService {
       token,
       appUrl
     );
-    const isProduction = process.env.NODE_ENV === 'production';
     return {
       success: true,
       message: `Verification code sent to ${cleanNewEmail}. Please confirm to finalize.`,
-      ...(!isProduction && emailResult.debugToken ? { debugToken: emailResult.debugToken } : {}),
+      debugToken: emailResult.debugToken,
     };
   }
 
@@ -459,7 +401,6 @@ export class AuthService {
     }
 
     const admin = await Admin.findById(adminId);
-
     if (!admin) {
       const error: any = new Error('Admin not found.');
       error.statusCode = 404;

@@ -141,7 +141,7 @@ export const PortalApp: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 bg-[#b91c1c] rounded-full" />
             <span className="font-bold text-sm tracking-wider uppercase">
-              The American Dream
+              Talent Experts America
             </span>
           </div>
           <button

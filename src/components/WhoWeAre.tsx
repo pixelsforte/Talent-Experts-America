@@ -55,7 +55,7 @@ export const WhoWeAre: React.FC = () => {
               At The Talent Experts of America, we bridge the gap between
               exceptional American talent and thriving businesses. Our mission is
               to deliver staffing solutions that prioritize placing highly
-              skilled U.S.-based professionals in roles where they can excel and
+              skilled U.S.based professionals in roles where they can excel and
               make an impact.
             </p>
 

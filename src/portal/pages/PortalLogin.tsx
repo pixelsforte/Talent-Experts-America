@@ -82,7 +82,7 @@ export const PortalLogin: React.FC<PortalLoginProps> = ({
           <div className="flex items-center justify-center gap-2 mb-3">
             <span className="w-2.5 h-2.5 bg-[#b91c1c] rounded-full" />
             <span className="text-xs font-black uppercase tracking-widest text-gray-300">
-              The American Dream Staffing
+              Talent Experts America
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">

@@ -1,10 +1,6 @@
 import { Request, Response } from 'express';
 import { FormSubmission } from '../models/FormSubmission.js';
-import { isDatabaseConnected, connectDatabase } from '../config/database.js';
-
-function escapeRegex(text: string): string {
-  return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-}
+import { isDatabaseConnected } from '../config/database.js';
 
 export class SubmissionController {
   /**
@@ -13,18 +9,9 @@ export class SubmissionController {
   async createSubmission(req: Request, res: Response): Promise<void> {
     try {
       if (!isDatabaseConnected()) {
-        await connectDatabase(true);
-      }
-
-      if (!isDatabaseConnected()) {
-        // Wait briefly for connection handshake if still negotiating
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-      }
-
-      if (!isDatabaseConnected()) {
         res.status(503).json({
-          error: 'Database Connecting',
-          message: 'The database is currently connecting. Please try again in a few moments.',
+          error: 'Service Unavailable',
+          message: 'Database storage is temporarily offline. Please try again or contact us directly.',
         });
         return;
       }
@@ -42,7 +29,7 @@ export class SubmissionController {
       });
 
       await submission.save();
-      console.log(`[FormSubmission] New inquiry saved to MongoDB from: ${submission.fullName} (${submission.email}) [${submission.interest}]`);
+      console.log(`[FormSubmission] New inquiry from: ${submission.fullName} (${submission.email}) [${submission.interest}]`);
 
       res.status(201).json({
         success: true,
@@ -64,6 +51,14 @@ export class SubmissionController {
    */
   async getSubmissions(req: Request, res: Response): Promise<void> {
     try {
+      if (!isDatabaseConnected()) {
+        res.status(503).json({
+          error: 'Service Unavailable',
+          message: 'Database is not connected.',
+        });
+        return;
+      }
+
       const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
       const limit = Math.min(
         100,
@@ -78,12 +73,11 @@ export class SubmissionController {
       const filter: any = {};
 
       if (search) {
-        const safeSearch = escapeRegex(search);
         filter.$or = [
-          { fullName: { $regex: safeSearch, $options: 'i' } },
-          { email: { $regex: safeSearch, $options: 'i' } },
-          { company: { $regex: safeSearch, $options: 'i' } },
-          { phone: { $regex: safeSearch, $options: 'i' } },
+          { fullName: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
+          { company: { $regex: search, $options: 'i' } },
+          { phone: { $regex: search, $options: 'i' } },
         ];
       }
 
@@ -129,7 +123,6 @@ export class SubmissionController {
   async getSubmissionById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-
       const submission = await FormSubmission.findById(id);
 
       if (!submission) {
@@ -199,7 +192,6 @@ export class SubmissionController {
   async deleteSubmission(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-
       const submission = await FormSubmission.findByIdAndDelete(id);
 
       if (!submission) {
@@ -224,4 +216,3 @@ export class SubmissionController {
 }
 
 export const submissionController = new SubmissionController();
-

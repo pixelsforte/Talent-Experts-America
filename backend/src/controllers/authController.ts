@@ -8,7 +8,7 @@ import {
 } from '../utils/tokens.js';
 import { AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { memoryEmailOutbox } from '../services/emailService.js';
-import { getDatabaseState, isDatabaseConnected } from '../config/database.js';
+import { getDatabaseState } from '../config/database.js';
 import { Admin } from '../models/Admin.js';
 
 export class AuthController {
@@ -33,7 +33,6 @@ export class AuthController {
         if (decoded && decoded.adminId) {
           try {
             const admin = await Admin.findById(decoded.adminId).maxTimeMS(3000).lean();
-
             if (admin) {
               authenticated = true;
               authenticatedAdmin = {
@@ -210,9 +209,6 @@ export class AuthController {
       }
 
       const result = await authService.resetPassword(token, newPassword, email);
-      if (result.token) {
-        setAdminCookie(res, result.token);
-      }
       res.json(result);
     } catch (error: any) {
       res.status(error.statusCode || 400).json({

@@ -21,27 +21,27 @@ export const NAV_ITEMS: NavItem[] = [
 
 export const HIGHLIGHTS_BAR = [
   {
-    title: 'U.S BASED TALENT',
+    title: 'U.S.BASED TALENT',
     description: 'Professionals residing in the United States.',
   },
   {
     title: 'END-TO-END STAFFING',
-    description: 'From recruitment through onboarding',
+    description: 'From recruitment through onboarding.',
   },
   {
     title: 'VETERAN WORKFORCE',
-    description: 'Supporting veterans transitioning into civilian careers',
+    description: 'Supporting veterans transitioning into civilian careers.',
   },
   {
     title: 'INDUSTRY EXPERTISE',
-    description: 'Staffing solutions across diverse industries',
+    description: 'Staffing solutions across diverse industries.',
   },
 ];
 
 export const WHY_CHOOSE_ITEMS: WhyChooseItem[] = [
   {
     number: '01',
-    title: 'U.S.-BASED TALENT',
+    title: 'U.S.BASED TALENT',
     description:
       'Focus on skilled professionals residing in the United States, helping businesses access qualified local workforce resources.',
   },
@@ -226,7 +226,7 @@ export const PROCESS_STEPS: ProcessStep[] = [
   {
     number: '02',
     title: 'SOURCE',
-    description: 'Identify qualified U.S.-based professionals.',
+    description: 'Identify qualified U.S.based professionals.',
   },
   {
     number: '03',
@@ -270,40 +270,26 @@ export const ACCOUNTABILITY_ITEMS: AccountabilityItem[] = [
 ];
 
 export const TEAM_MEMBERS: TeamMember[] = [
-  /*
   {
     initials: 'AR',
-    name: 'Ahsan Rizvi',
-    role: 'Director',
-    title: 'THE Talent Experts of America',
-  },
-  {
-    initials: 'JR',
-    name: 'Joseph Ross',
-    role: 'Director',
-    title: 'THE Talent Experts of America',
-  },
-  */
-  {
-    initials: 'EC',
-    name: 'Enrique Carceres ',
-    role: ' President & CEO',
-    title: 'THE Talent Experts of America',
-    image: '/team-01.jpeg',
+    name: 'Ahmer Rizvi',
+    role: 'Director of Client Acquisition, Business Strategy, Hospital Relationships, Sales Meetings, Contracts, Key Accounts, Financial Oversight',
+    title: 'The Talent Experts of America',
+    image: '/team-03.jpeg',
   },
   {
     initials: 'AW',
     name: 'Arbab Wasi',
-    role: 'Chief Operating Officer	',
-    title: 'THE Talent Experts of America',
+    role: 'Chief Operating Officer, Candidate Sourcing Strategy, Recruiter Management, Delivery, ATS Management, Recruiting Process',
+    title: 'The Talent Experts of America',
     image: '/team-02.jpeg',
   },
   {
-    initials: 'AR',
-    name: 'Ahmer Rizvi',
-    role: 'Director of client acquisition',
-    title: 'THE Talent Experts of America',
-    image: '/team-03.jpeg',
+    initials: 'EC',
+    name: 'Enrique Carceres ',
+    role: ' President & CEO',
+    title: 'The Talent Experts of America',
+    image: '/team-01.jpeg',
   },
 ];
 
@@ -313,4 +299,3 @@ export const CONTACT_INFO = {
   website: 'talentexpertsamerica.com',
   footnote: 'Serving organizations and professionals across the United States.',
 };
-

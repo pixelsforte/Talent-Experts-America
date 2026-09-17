@@ -32,7 +32,7 @@ export const PortalSidebar: React.FC<PortalSidebarProps> = ({
         <div className="flex items-center gap-2.5 mb-1.5">
           <span className="w-2.5 h-2.5 bg-[#b91c1c] rounded-full shrink-0" />
           <h1 className="font-black text-base tracking-wider uppercase text-white">
-            The American Dream
+            Talent Experts America
           </h1>
         </div>
         <div className="flex items-center justify-between pl-5">

@@ -3,7 +3,7 @@ import { AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { authService } from '../services/authService.js';
 import { FormSubmission } from '../models/FormSubmission.js';
 import { setAdminCookie } from '../utils/tokens.js';
-import { getDatabaseState, isDatabaseConnected } from '../config/database.js';
+import { getDatabaseState } from '../config/database.js';
 
 export class AdminController {
   /**
@@ -190,47 +190,6 @@ export class AdminController {
     } catch (error: any) {
       res.status(error.statusCode || 400).json({
         error: 'Email Update Failed',
-        message: error.message,
-      });
-    }
-  }
-
-  /**
-   * Updates admin password directly when authenticated and current password verified.
-   */
-  async updatePasswordDirect(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
-    try {
-      const { currentPassword, newPassword } = req.body;
-      if (!req.admin) {
-        res.status(401).json({ error: 'Unauthorized', message: 'Not logged in.' });
-        return;
-      }
-
-      if (!currentPassword || !newPassword) {
-        res.status(400).json({
-          error: 'Validation Error',
-          message: 'Both current password and new password are required.',
-        });
-        return;
-      }
-
-      const result = await authService.updatePasswordDirect(
-        req.admin._id.toString(),
-        currentPassword,
-        newPassword
-      );
-
-      if (result.token) {
-        setAdminCookie(res, result.token);
-      }
-
-      res.json(result);
-    } catch (error: any) {
-      res.status(error.statusCode || 400).json({
-        error: 'Password Update Failed',
         message: error.message,
       });
     }

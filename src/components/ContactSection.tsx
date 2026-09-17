@@ -98,7 +98,7 @@ export const ContactSection: React.FC = () => {
               <div className="space-y-6 mb-12">
                 <div>
                   <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block mb-1">
-                    EMAIL
+                    WEBSITE
                   </span>
                   <a
                     href="mailto:info@talentexpertsamerica.com"

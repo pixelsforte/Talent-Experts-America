@@ -38,26 +38,20 @@ export async function sendPasswordResetEmail(
 ): Promise<{ success: boolean; message: string; debugToken?: string }> {
   const baseUrl = appUrl || process.env.APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
   const resetUrl = `${baseUrl}/management-portal/reset-password?token=${resetToken}&email=${encodeURIComponent(toEmail)}`;
-  const from = process.env.EMAIL_FROM || '"The Talent Experts of America" <info@talentexpertsamerica.com>';
+  const from = process.env.EMAIL_FROM || '"The American Dream Staffing" <noreply@theamericandreamstaffing.com>';
 
-  // Record for debugging / testing scenarios only outside production
-  const isProduction = process.env.NODE_ENV === 'production';
-  if (!isProduction) {
-    memoryEmailOutbox.push({
-      type: 'PASSWORD_RESET',
-      to: toEmail,
-      token: resetToken,
-      sentAt: new Date(),
-    });
-    if (memoryEmailOutbox.length > 10) {
-      memoryEmailOutbox.shift();
-    }
-  }
+  // Record for debugging / testing scenarios
+  memoryEmailOutbox.push({
+    type: 'PASSWORD_RESET',
+    to: toEmail,
+    token: resetToken,
+    sentAt: new Date(),
+  });
 
   const mailOptions = {
     from,
     to: toEmail,
-    subject: 'Security: Password Recovery for Management Portal - The Talent Experts of America',
+    subject: 'Security: Password Recovery for Management Portal - The American Dream Staffing',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; background-color: #ffffff;">
         <div style="border-bottom: 2px solid #b91c1c; padding-bottom: 16px; margin-bottom: 24px;">
@@ -90,28 +84,22 @@ export async function sendPasswordResetEmail(
       console.log(`[Email] Password reset email sent via SMTP to: ${toEmail}`);
       return { success: true, message: 'Recovery email sent successfully' };
     } catch (error) {
-      console.error('[Email] Failed to send via SMTP:', error);
-      if (!isProduction) {
-        console.log(`[Email Notice] Reset Link: ${resetUrl} | Token: ${resetToken}`);
-      }
+      console.error('[Email] Failed to send via SMTP, logged to system output:', error);
+      console.log(`[Email Notice] Reset Link: ${resetUrl} | Token: ${resetToken}`);
       return {
         success: true,
-        message: 'Recovery email queued',
-        ...(!isProduction && { debugToken: resetToken }),
+        message: 'Recovery token generated and queued',
+        debugToken: resetToken,
       };
     }
   } else {
-    if (!isProduction) {
-      console.log(`[Email Service (Dev/Console)] Reset email for ${toEmail}:`);
-      console.log(`[Email Service] Link: ${resetUrl}`);
-      console.log(`[Email Service] Token: ${resetToken}`);
-    } else {
-      console.warn(`[Email Service] SMTP credentials not configured. Email could not be sent to: ${toEmail}`);
-    }
+    console.log(`[Email Service (Dev/Console)] Reset email for ${toEmail}:`);
+    console.log(`[Email Service] Link: ${resetUrl}`);
+    console.log(`[Email Service] Token: ${resetToken}`);
     return {
       success: true,
-      message: 'Recovery email queued',
-      ...(!isProduction && { debugToken: resetToken }),
+      message: 'Recovery email generated (logged to server console)',
+      debugToken: resetToken,
     };
   }
 }
@@ -123,26 +111,20 @@ export async function sendEmailChangeVerification(
 ): Promise<{ success: boolean; message: string; debugToken?: string }> {
   const baseUrl = appUrl || process.env.APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
   const verifyUrl = `${baseUrl}/management-portal/settings?action=verify-email&token=${verificationToken}&email=${encodeURIComponent(newEmail)}`;
-  const from = process.env.EMAIL_FROM || '"The Talent Experts of America" <info@talentexpertsamerica.com>';
+  const from = process.env.EMAIL_FROM || '"The American Dream Staffing" <noreply@theamericandreamstaffing.com>';
 
-  // Record for debugging / testing scenarios only outside production
-  const isProduction = process.env.NODE_ENV === 'production';
-  if (!isProduction) {
-    memoryEmailOutbox.push({
-      type: 'EMAIL_CHANGE',
-      to: newEmail,
-      token: verificationToken,
-      sentAt: new Date(),
-    });
-    if (memoryEmailOutbox.length > 10) {
-      memoryEmailOutbox.shift();
-    }
-  }
+  // Record for debugging / testing
+  memoryEmailOutbox.push({
+    type: 'EMAIL_CHANGE',
+    to: newEmail,
+    token: verificationToken,
+    sentAt: new Date(),
+  });
 
   const mailOptions = {
     from,
     to: newEmail,
-    subject: 'Security: Verify New Email for Management Portal - The Talent Experts of America',
+    subject: 'Security: Verify New Email for Management Portal - The American Dream Staffing',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; background-color: #ffffff;">
         <div style="border-bottom: 2px solid #b91c1c; padding-bottom: 16px; margin-bottom: 24px;">
@@ -176,27 +158,21 @@ export async function sendEmailChangeVerification(
       return { success: true, message: 'Verification email sent successfully' };
     } catch (error) {
       console.error('[Email] Failed to send via SMTP:', error);
-      if (!isProduction) {
-        console.log(`[Email Notice] Verify Link: ${verifyUrl} | Token: ${verificationToken}`);
-      }
+      console.log(`[Email Notice] Verify Link: ${verifyUrl} | Token: ${verificationToken}`);
       return {
         success: true,
         message: 'Verification code generated and queued',
-        ...(!isProduction && { debugToken: verificationToken }),
+        debugToken: verificationToken,
       };
     }
   } else {
-    if (!isProduction) {
-      console.log(`[Email Service (Dev/Console)] Email Change code for ${newEmail}:`);
-      console.log(`[Email Service] Link: ${verifyUrl}`);
-      console.log(`[Email Service] Token: ${verificationToken}`);
-    } else {
-      console.warn(`[Email Service] SMTP credentials not configured. Verification code could not be sent to: ${newEmail}`);
-    }
+    console.log(`[Email Service (Dev/Console)] Email Change code for ${newEmail}:`);
+    console.log(`[Email Service] Link: ${verifyUrl}`);
+    console.log(`[Email Service] Token: ${verificationToken}`);
     return {
       success: true,
-      message: 'Verification code generated and queued',
-      ...(!isProduction && { debugToken: verificationToken }),
+      message: 'Verification email generated (logged to server console)',
+      debugToken: verificationToken,
     };
   }
 }

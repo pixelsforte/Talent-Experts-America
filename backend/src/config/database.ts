@@ -1,24 +1,13 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import dns from 'node:dns';
 
-// Allow Mongoose standard resilient command buffering during connection phase
-mongoose.set('bufferCommands', true);
+// Prevent Mongoose from silently buffering API operations while the database is unavailable.
+mongoose.set('bufferCommands', false);
 
 let isConnected = false;
 let connectionPromise: Promise<boolean> | null = null;
 let nextConnectionAttemptAt = 0;
-let warnedMissingUri = false;
-let dnsConfigurationAttempted = false;
-const CONNECTION_RETRY_BACKOFF_MS = 5000;
-
-function resolveMongoUri(): string {
-  const uri = process.env.MONGODB_URI?.trim();
-  if (!uri) {
-    throw new Error('[MongoDB] MONGODB_URI is required.');
-  }
-  return uri;
-}
+const CONNECTION_RETRY_BACKOFF_MS = 30000;
 
 function sanitizeMongoUri(rawUri: string): string {
   let uri = rawUri.trim();
@@ -35,61 +24,52 @@ function sanitizeMongoUri(rawUri: string): string {
   return uri;
 }
 
-function configureMongoDns(): void {
-  if (dnsConfigurationAttempted) return;
-  dnsConfigurationAttempted = true;
-
-  const configuredServers = process.env.MONGODB_DNS_SERVERS
-    ?.split(',')
-    .map((server) => server.trim())
-    .filter(Boolean);
-
-  if (configuredServers?.length) {
-    dns.setServers(configuredServers);
-  }
-}
-
-export async function connectDatabase(force = false): Promise<boolean> {
+export async function connectDatabase(): Promise<boolean> {
   try {
     dotenv.config();
   } catch {
     // Environment variables may already be supplied by the hosting platform.
   }
 
-  const rawUri = resolveMongoUri();
+  // Prefer MONGODB_URI; keep MONGODB_URL for backwards compatibility.
+  // MONGODB_DIRECT_URI can be supplied by the host if SRV DNS is unavailable.
+  const rawUri = process.env.MONGODB_DIRECT_URI || process.env.MONGODB_URI || process.env.MONGODB_URL;
+
+  if (!rawUri || !rawUri.trim()) {
+    console.warn('[MongoDB] MONGODB_DIRECT_URI / MONGODB_URI / MONGODB_URL is not configured. Database features are unavailable.');
+    isConnected = false;
+    return false;
+  }
 
   if (isConnected && mongoose.connection.readyState === 1) return true;
   if (connectionPromise) return connectionPromise;
-  if (!force && Date.now() < nextConnectionAttemptAt) return false;
+  if (Date.now() < nextConnectionAttemptAt) return false;
 
   const uri = sanitizeMongoUri(rawUri);
-  configureMongoDns();
-
-  const connectOptions: mongoose.ConnectOptions = {
-    dbName: 'talent_experts_america_production',
-    serverSelectionTimeoutMS: Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS || 8000),
-    connectTimeoutMS: Number(process.env.MONGODB_CONNECT_TIMEOUT_MS || 8000),
-    socketTimeoutMS: Number(process.env.MONGODB_SOCKET_TIMEOUT_MS || 45000),
-    maxPoolSize: 10,
-    minPoolSize: 0,
-    retryWrites: true,
-  };
 
   connectionPromise = (async () => {
     try {
       console.log('[MongoDB] Connecting to MongoDB Atlas...');
-      await mongoose.connect(uri, connectOptions);
+
+      // Do not override the container's DNS servers. Atlas mongodb+srv URIs require
+      // SRV DNS resolution, and PaaS/container DNS is often required for that lookup.
+      await mongoose.connect(uri, {
+        serverSelectionTimeoutMS: Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS || 8000),
+        connectTimeoutMS: Number(process.env.MONGODB_CONNECT_TIMEOUT_MS || 8000),
+        socketTimeoutMS: Number(process.env.MONGODB_SOCKET_TIMEOUT_MS || 45000),
+        maxPoolSize: 10,
+        minPoolSize: 0,
+        retryWrites: true,
+      });
 
       isConnected = true;
       nextConnectionAttemptAt = 0;
       console.log('[MongoDB] Successfully connected to database:', mongoose.connection.name);
       return true;
-    } catch (error: any) {
-      console.warn('[MongoDB] Primary connection attempt failed:', error.message || error);
-
+    } catch (error) {
       isConnected = false;
       nextConnectionAttemptAt = Date.now() + CONNECTION_RETRY_BACKOFF_MS;
-      console.error('[MongoDB] Failed to connect to MongoDB Atlas after all attempts.');
+      console.error('[MongoDB] Failed to connect to MongoDB Atlas:', error);
       return false;
     } finally {
       connectionPromise = null;

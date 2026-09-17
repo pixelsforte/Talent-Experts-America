@@ -51,7 +51,8 @@ export const SpecializedTechSection: React.FC = () => {
             SPECIALIZED TALENT
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-bold text-white tracking-tight leading-[1.12] mb-6">
-         ERP Technology Solutions.
+            Talent for the Technologies <br />
+            Shaping Tomorrow.
           </h2>
           <p className="text-base sm:text-lg text-gray-300 leading-relaxed max-w-2xl">
             Our staffing focus extends into emerging and high-technology fields

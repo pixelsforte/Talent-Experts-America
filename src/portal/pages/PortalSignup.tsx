@@ -117,7 +117,7 @@ export const PortalSignup: React.FC<PortalSignupProps> = ({
           <div className="flex items-center justify-center gap-2 mb-2">
             <span className="w-2.5 h-2.5 bg-[#b91c1c] rounded-full" />
             <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
-              The American Dream
+              Talent Experts America
             </span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white mb-2">

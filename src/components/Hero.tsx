@@ -49,7 +49,7 @@ export const Hero: React.FC<HeroProps> = ({
 
             {/* Description */}
             <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-lg mb-8">
-              We connect exceptional U.S.-based professionals with businesses
+              We connect exceptional U.S.based professionals with businesses
               that need the right people, the right skills, and the right
               workforce solutions to grow.
             </p>
@@ -112,7 +112,7 @@ export const Hero: React.FC<HeroProps> = ({
                       TALENT
                     </div>
                     <div className="text-[10px] sm:text-[11px] text-gray-500 font-medium mt-1 leading-tight">
-                      U.S.-based professionals
+                      U.S.based professionals
                     </div>
                   </div>
                   <div className="px-2 sm:px-4 text-left">
