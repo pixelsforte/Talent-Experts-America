@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
 import { authRoutes } from './routes/authRoutes.js';
 import { adminRoutes } from './routes/adminRoutes.js';
 import { submissionRoutes } from './routes/submissionRoutes.js';
@@ -11,24 +11,60 @@ import { getDatabaseState, isDatabaseConnected, connectDatabase } from './config
 export function createExpressApp(): express.Application {
   const app = express();
 
-  // Security headers (keep CSP relaxed to work with Vite SPA)
+  // Needed so rate limiting sees each visitor's real IP behind the hosting proxy
+  app.set('trust proxy', 1);
+
+  // Security headers (Content-Security-Policy enabled)
+  const isProduction = process.env.NODE_ENV === 'production';
   app.use(
     helmet({
-      contentSecurityPolicy: false,
+      contentSecurityPolicy: {
+        useDefaults: true,
+        directives: {
+          defaultSrc: ["'self'"],
+          // Vite dev server needs inline/eval scripts; production stays strict
+          scriptSrc: isProduction ? ["'self'"] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+          imgSrc: ["'self'", 'data:', 'blob:', 'https://images.unsplash.com'],
+          // Vite hot-reload uses websockets in development
+          connectSrc: isProduction ? ["'self'"] : ["'self'", 'ws:', 'wss:'],
+          objectSrc: ["'none'"],
+          baseUri: ["'self'"],
+          formAction: ["'self'"],
+          frameAncestors: ["'self'"],
+          upgradeInsecureRequests: isProduction ? [] : null,
+        },
+      },
       crossOriginEmbedderPolicy: false,
     })
   );
 
-  // CORS
+  // CORS: the website and API share one origin, so cross-origin access is off by default.
+  // To allow another site, set ALLOWED_ORIGINS="https://example.com,https://other.com"
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
   app.use(
     cors({
-      origin: true,
-      credentials: true,
+      origin: allowedOrigins,
+    })
+  );
+
+  // Rate limit the whole API (per IP)
+  app.use(
+    '/api',
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      limit: 600,
+      standardHeaders: 'draft-7',
+      legacyHeaders: false,
+      message: { error: 'Too many requests', message: 'Too many requests. Please try again later.' },
     })
   );
 
   // Parsers
-  app.use(cookieParser());
   app.use(express.json({ limit: '5mb' }));
   app.use(express.urlencoded({ extended: true }));
 
