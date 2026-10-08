@@ -1,6 +1,21 @@
 import { Request, Response } from 'express';
 import { FormSubmission } from '../models/FormSubmission.js';
 import { isDatabaseConnected } from '../config/database.js';
+import { escapeRegex } from '../utils/escapeRegex.js';
+
+const ALLOWED_STATUSES = ['NEW', 'REVIEWED', 'CONTACTED', 'ARCHIVED'] as const;
+const ALLOWED_INTERESTS = [
+  'Finding a Job',
+  'Hiring Talent',
+  'Veteran Opportunities',
+  'Staffing Solutions',
+] as const;
+const OBJECT_ID_PATTERN = /^[a-fA-F0-9]{24}$/;
+
+/** Returns the id only if it is a plain 24-character hex string, otherwise null. */
+function toObjectIdString(value: unknown): string | null {
+  return typeof value === 'string' && OBJECT_ID_PATTERN.test(value) ? value : null;
+}
 
 export class SubmissionController {
   /**
@@ -17,14 +32,16 @@ export class SubmissionController {
       }
 
       const { fullName, email, phone, company, interest, message } = req.body;
+      const asText = (value: unknown): string =>
+        typeof value === 'string' ? value.trim() : '';
 
       const submission = new FormSubmission({
-        fullName: fullName.trim(),
-        email: email.trim().toLowerCase(),
-        phone: phone ? phone.trim() : '',
-        company: company ? company.trim() : '',
-        interest: interest || 'Finding a Job',
-        message: message ? message.trim() : '',
+        fullName: asText(fullName),
+        email: asText(email).toLowerCase(),
+        phone: asText(phone),
+        company: asText(company),
+        interest: ALLOWED_INTERESTS.find((item) => item === interest) || 'Finding a Job',
+        message: asText(message),
         status: 'NEW',
       });
 
@@ -66,9 +83,15 @@ export class SubmissionController {
       );
       const skip = (page - 1) * limit;
 
-      const search = (req.query.search as string)?.trim();
-      const interest = req.query.interest as string;
-      const status = req.query.status as string;
+      // Query values must be plain strings (blocks ?status[$ne]=x style injection)
+      const rawSearch = typeof req.query.search === 'string' ? req.query.search : '';
+      const rawInterest = typeof req.query.interest === 'string' ? req.query.interest : '';
+      const rawStatus = typeof req.query.status === 'string' ? req.query.status : '';
+
+      const search = escapeRegex(rawSearch);
+      // Only values from the fixed allow-lists can reach the database query
+      const interest = ALLOWED_INTERESTS.find((item) => item === rawInterest);
+      const status = ALLOWED_STATUSES.find((item) => item === rawStatus);
 
       const filter: any = {};
 
@@ -81,11 +104,11 @@ export class SubmissionController {
         ];
       }
 
-      if (interest && interest !== 'ALL') {
+      if (interest) {
         filter.interest = interest;
       }
 
-      if (status && status !== 'ALL') {
+      if (status) {
         filter.status = status;
       }
 
@@ -122,7 +145,14 @@ export class SubmissionController {
    */
   async getSubmissionById(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = toObjectIdString(req.params.id);
+      if (!id) {
+        res.status(400).json({
+          error: 'Validation Error',
+          message: 'Invalid submission ID.',
+        });
+        return;
+      }
       const submission = await FormSubmission.findById(id);
 
       if (!submission) {
@@ -147,14 +177,21 @@ export class SubmissionController {
    */
   async updateStatus(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      const { status } = req.body;
-
-      const allowedStatuses = ['NEW', 'REVIEWED', 'CONTACTED', 'ARCHIVED'];
-      if (!allowedStatuses.includes(status)) {
+      const id = toObjectIdString(req.params.id);
+      if (!id) {
         res.status(400).json({
           error: 'Validation Error',
-          message: `Status must be one of: ${allowedStatuses.join(', ')}`,
+          message: 'Invalid submission ID.',
+        });
+        return;
+      }
+
+      // Pick the status from the fixed allow-list (never use the raw request value)
+      const status = ALLOWED_STATUSES.find((item) => item === req.body?.status);
+      if (!status) {
+        res.status(400).json({
+          error: 'Validation Error',
+          message: `Status must be one of: ${ALLOWED_STATUSES.join(', ')}`,
         });
         return;
       }
@@ -191,7 +228,14 @@ export class SubmissionController {
    */
   async deleteSubmission(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = toObjectIdString(req.params.id);
+      if (!id) {
+        res.status(400).json({
+          error: 'Validation Error',
+          message: 'Invalid submission ID.',
+        });
+        return;
+      }
       const submission = await FormSubmission.findByIdAndDelete(id);
 
       if (!submission) {
