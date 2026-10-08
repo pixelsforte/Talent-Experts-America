@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { isValidEmail } from '../utils/emailValidator.js';
 
 export function validateFormSubmission(
   req: Request,
@@ -31,8 +32,7 @@ export function validateFormSubmission(
     return;
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email.trim())) {
+  if (!isValidEmail(email)) {
     res.status(400).json({
       error: 'Validation Error',
       message: 'Please provide a valid email address.',
